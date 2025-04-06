@@ -1,0 +1,52 @@
+version: '3'
+
+services:
+  # Laravel Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.render
+    container_name: britva-app
+    ports:
+      - '8000:8000'
+    environment:
+      APP_ENV: local
+      APP_DEBUG: true
+      DB_CONNECTION: pgsql
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_DATABASE: britva
+      DB_USERNAME: britva
+      DB_PASSWORD: BritvaSecureDb123!
+      SESSION_DRIVER: database
+      CACHE_DRIVER: database
+      QUEUE_CONNECTION: database
+    depends_on:
+      - db
+    networks:
+      - britva-network
+    volumes:
+      - ./:/var/www/html
+
+  # PostgreSQL Database
+  db:
+    image: postgres:latest
+    container_name: britva-db
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_USER: britva
+      POSTGRES_PASSWORD: BritvaSecureDb123!
+      POSTGRES_DB: britva
+    volumes:
+      - britva-db-data:/var/lib/postgresql/data
+    networks:
+      - britva-network
+
+networks:
+  britva-network:
+    driver: bridge
+
+volumes:
+  britva-db-data:
+    driver: local
