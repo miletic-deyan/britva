@@ -49,15 +49,17 @@ This project has been configured for Vercel with:
 
 ### 3. Custom Build Script
 
-We use a custom build script (`vercel-build.sh`) that:
+We use a custom build script (`vercel-build.sh`) that handles the entire build process:
 
-1. Downloads and installs Composer during the build process
-2. Installs PHP dependencies with Composer
-3. Clears Laravel caches
-4. Installs NPM dependencies and builds assets
-5. Sets up the storage link
+1. Downloads and installs PHP in the build environment (Vercel doesn't provide PHP by default)
+2. Downloads and installs Composer
+3. Installs PHP dependencies with Composer
+4. Creates `.env` file and generates an app key if needed
+5. Clears Laravel caches
+6. Installs NPM dependencies and builds frontend assets
+7. Sets up the storage link
 
-This approach solves the common "composer: command not found" error that occurs when deploying Laravel to Vercel.
+This approach solves common errors like "php: command not found" and "composer: command not found" that occur when deploying Laravel to Vercel.
 
 ### 4. Deployment Options
 
@@ -92,7 +94,7 @@ Set up your environment variables in the Vercel dashboard:
 
 **Essential Environment Variables**:
 
--   `APP_KEY`: Your Laravel application key (generate with `php artisan key:generate --show`)
+-   `APP_KEY`: Your Laravel application key (generated automatically by our build script)
 -   `DB_*`: Database connection details
 -   `AWS_*`: S3 storage configuration (if using file uploads)
 
@@ -150,33 +152,38 @@ Vercel functions are stateless, so file-based caching won't persist. Use:
 
 ### Common Issues:
 
-1. **"composer: command not found" Error**:
+1. **"php: command not found" Error**:
+
+    - This is addressed in our setup by downloading and installing PHP in the build script.
+    - If you're still seeing this error, ensure the PHP download URL in `vercel-build.sh` is accessible and up to date.
+
+2. **"composer: command not found" Error**:
 
     - This is addressed in our setup by using a custom build script (`vercel-build.sh`) that installs Composer before using it.
     - If you're still seeing this error, make sure your repository includes the `vercel-build.sh` script and it's set to executable (`chmod +x vercel-build.sh`).
 
-2. **"Framework should be equal to one of the allowed values" Error**:
+3. **"Framework should be equal to one of the allowed values" Error**:
 
     - Make sure your `vercel.json` has `"framework": null` instead of `"framework": "laravel"`.
     - Laravel is not in Vercel's list of supported frameworks, so we use a custom configuration.
 
-3. **Deployment Fails**:
+4. **Deployment Fails**:
 
-    - Check that the PHP version in `vercel-php@0.6.0` runtime is compatible with your Laravel version.
+    - Check that the PHP version in the build script is compatible with your Laravel version.
     - Ensure your build script completes successfully.
     - Check the build logs in the Vercel dashboard for specific errors.
 
-4. **Missing Assets**:
+5. **Missing Assets**:
 
     - Ensure your assets are being built correctly with `npm run build`.
     - Check that your routes in `vercel.json` correctly map to your asset directories.
 
-5. **Database Connection Issues**:
+6. **Database Connection Issues**:
 
     - Verify your database credentials in the Vercel environment variables.
     - Ensure your database provider allows connections from Vercel's IP ranges.
 
-6. **500 Errors After Deployment**:
+7. **500 Errors After Deployment**:
     - Check Vercel logs in the dashboard.
     - Temporarily set `APP_DEBUG=true` in environment variables to see detailed error messages.
 

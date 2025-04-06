@@ -196,8 +196,11 @@ case $deploy_option in
 esac
 
 echo ""
+echo "Important Notes:"
+echo "1. The build script automatically installs PHP and Composer in the Vercel environment."
+echo "2. The APP_KEY is generated in the build process if needed."
+echo ""
 echo "Important Vercel Environment Variables to Set in Dashboard:"
-echo "- APP_KEY: Your Laravel application key"
 echo "- DB_CONNECTION: Use an external database provider"
 echo "- DB_HOST, DB_PORT, DB_DATABASE, DB_USERNAME, DB_PASSWORD: For database connection"
 echo "- AWS_* variables: If using S3 for file storage"
