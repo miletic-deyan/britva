@@ -1,11 +1,20 @@
 {
     "version": 2,
-    "public": true,
-    "framework": null,
+    "framework": "other",
+    "builds": [
+        {
+            "src": "api/index.php",
+            "use": "vercel-php@0.6.1"
+        },
+        {
+            "src": "public/**",
+            "use": "@vercel/static"
+        }
+    ],
     "routes": [
         {
-            "src": "/build/?(.*)",
-            "dest": "/public/build/$1"
+            "src": "/(css|js|images|fonts|build)/.*",
+            "dest": "/public/$0"
         },
         {
             "src": "/favicon.ico",
@@ -14,14 +23,6 @@
         {
             "src": "/robots.txt",
             "dest": "/public/robots.txt"
-        },
-        {
-            "src": "/(css|js|images|fonts)/(.*)",
-            "dest": "/public/$1/$2"
-        },
-        {
-            "src": "/storage/(.*)",
-            "dest": "/public/storage/$1"
         },
         {
             "src": "/(.*)",
@@ -40,19 +41,6 @@
         "VIEW_COMPILED_PATH": "/tmp",
         "CACHE_DRIVER": "array",
         "LOG_CHANNEL": "stderr",
-        "SESSION_DRIVER": "cookie",
-        "SSR_TEMP_PATH": "/tmp/ssr",
-        "NODE_PATH": "node_modules"
-    },
-    "builds": [
-        {
-            "src": "api/index.php",
-            "use": "vercel-php@0.6.1"
-        },
-        {
-            "src": "public/**",
-            "use": "@vercel/static"
-        }
-    ],
-    "buildCommand": "bash ./vercel-build.sh"
+        "SESSION_DRIVER": "cookie"
+    }
 }
