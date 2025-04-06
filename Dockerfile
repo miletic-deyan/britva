@@ -1,4 +1,4 @@
-FROM php:8.2-fpm
+FROM php:8.2-fpm AS php-build
 
 # Set working directory
 WORKDIR /var/www
@@ -21,6 +21,13 @@ RUN apt-get update && apt-get install -y \
 
 # Clear cache
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Create a stripped-down PHP binary for Vercel
+RUN mkdir -p /opt/vercel-php && \
+    cp /usr/local/bin/php /opt/vercel-php/ && \
+    cp -r /usr/local/lib/php /opt/vercel-php/ && \
+    cp /usr/local/etc/php/php.ini-production /opt/vercel-php/php.ini && \
+    tar -czf /tmp/vercel-php.tar.gz -C /opt vercel-php
 
 # Install extensions
 RUN docker-php-ext-install pdo_mysql mbstring zip exif pcntl

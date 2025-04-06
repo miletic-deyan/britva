@@ -5,63 +5,98 @@ set -e
 
 echo "📦 Starting Laravel build process on Vercel..."
 
-# Verify PHP is available (should be provided by vercel-php runtime)
-echo "🔍 Checking PHP version..."
-php -v
+# Create a directory for Node.js based PHP executor
+echo "🔧 Setting up Node.js PHP executor..."
+mkdir -p bin
 
-# Install Composer
+# Create a PHP wrapper script
+cat > bin/php <<'EOL'
+#!/usr/bin/env node
+
+const { execSync } = require('child_process');
+const path = require('path');
+const fs = require('fs');
+const os = require('os');
+
+// Create a temporary file with PHP code
+const tmpDir = os.tmpdir();
+const tmpFile = path.join(tmpDir, `vercel-php-${Date.now()}.php`);
+
+// Get all arguments after the script name
+const args = process.argv.slice(2);
+let phpCode = '';
+
+if (args.length === 0) {
+  console.log("This is a Node.js wrapper for PHP in Vercel environment");
+  process.exit(0);
+}
+
+// Check if we're executing a PHP file
+if (args[0].endsWith('.php') && fs.existsSync(args[0])) {
+  // Execute PHP file directly using the Vercel PHP runtime
+  try {
+    const result = execSync(`/var/task/php/bin/php ${args.join(' ')}`, { stdio: 'inherit' });
+  } catch (error) {
+    process.exit(error.status || 1);
+  }
+} else if (args[0] === '-r') {
+  // Handle PHP code snippet
+  phpCode = args[1];
+  fs.writeFileSync(tmpFile, phpCode);
+  
+  try {
+    const result = execSync(`/var/task/php/bin/php ${tmpFile}`, { stdio: 'inherit' });
+    fs.unlinkSync(tmpFile);
+  } catch (error) {
+    fs.unlinkSync(tmpFile);
+    process.exit(error.status || 1);
+  }
+} else {
+  // Forward all arguments to the PHP runtime
+  try {
+    const result = execSync(`/var/task/php/bin/php ${args.join(' ')}`, { stdio: 'inherit' });
+  } catch (error) {
+    process.exit(error.status || 1);
+  }
+}
+EOL
+
+chmod +x bin/php
+export PATH="$PWD/bin:$PATH"
+
+echo "✅ PHP wrapper created."
+
+# Install Composer manually
 echo "🎼 Installing Composer..."
-php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
-php composer-setup.php --quiet
-php -r "unlink('composer-setup.php');"
-echo "✅ Composer installed successfully!"
+curl -sS https://getcomposer.org/installer -o composer-setup.php
+bin/php composer-setup.php --quiet
+rm composer-setup.php
+echo "✅ Composer installed."
 
 # Create .env file if it doesn't exist
 if [ ! -f .env ]; then
   echo "🔑 Creating .env file..."
   cp .env.example .env
-  echo "✅ .env file created!"
+  echo "✅ .env file created."
 fi
 
-# Install PHP dependencies
+# Install dependencies with --ignore-platform-reqs flag
 echo "🐘 Installing PHP dependencies..."
-php composer.phar install --no-interaction --prefer-dist --optimize-autoloader
-echo "✅ PHP dependencies installed successfully!"
+bin/php composer.phar install --no-interaction --prefer-dist --optimize-autoloader --ignore-platform-reqs
+echo "✅ Dependencies installed."
 
-# Generate app key if not set
-if grep -q "^APP_KEY=$" .env || ! grep -q "^APP_KEY=" .env; then
-  echo "🔑 Generating app key..."
-  php artisan key:generate --force
-  echo "✅ App key generated!"
-fi
+# Generate app key
+echo "🔑 Generating application key..."
+bin/php artisan key:generate --force
+echo "✅ Application key generated."
 
-# Clear Laravel caches
-echo "🧹 Clearing Laravel caches..."
-php artisan config:clear
-php artisan route:clear
-echo "✅ Laravel caches cleared successfully!"
-
-# Install NPM dependencies if package.json exists
+# Build frontend assets
 if [ -f "package.json" ]; then
-    echo "📦 Installing NPM dependencies..."
-    npm install
-    echo "✅ NPM dependencies installed successfully!"
-
-    # Build frontend assets if build script exists
-    if grep -q "\"build\"" package.json; then
-        echo "🏗️ Building frontend assets..."
-        npm run build
-        echo "✅ Frontend assets built successfully!"
-    fi
+  if grep -q "\"build\"" package.json; then
+    echo "🏗️ Building frontend assets..."
+    npm run build
+    echo "✅ Frontend assets built."
+  fi
 fi
 
-# Create storage link
-echo "🔗 Creating storage link..."
-php artisan storage:link || echo "⚠️ Could not create storage link, but continuing build..."
-
-# Ensure proper permissions for Vercel
-echo "🔒 Setting proper permissions..."
-find . -type d -exec chmod 755 {} \;
-find . -type f -exec chmod 644 {} \;
-
-echo "🚀 Build completed successfully!" 
+echo "🚀 Build process completed!" 

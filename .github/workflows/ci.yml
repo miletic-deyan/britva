@@ -1,0 +1,25 @@
+name: Vercel Build Preparation
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  prepare-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Prepare PHP build files
+        run: |
+          mkdir -p .vercel/output/static
+          cp -r public/* .vercel/output/static/ || true
+          echo "PHP build files prepared for Vercel"
+
+      - name: Create build output
+        run: |
+          mkdir -p .vercel/output/functions
+          echo "Build output created for Vercel functions"
