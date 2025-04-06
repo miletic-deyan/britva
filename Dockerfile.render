@@ -1,4 +1,4 @@
-FROM php:8.2-cli
+FROM php:8.2-fpm
 
 WORKDIR /var/www/html
 
@@ -13,7 +13,9 @@ RUN apt-get update && apt-get install -y \
     unzip \
     libpq-dev \
     nodejs \
-    npm
+    npm \
+    nginx \
+    supervisor
 
 # Clear cache
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
@@ -28,14 +30,65 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 COPY . .
 
 # Install dependencies
-RUN composer install --no-dev --optimize-autoloader
+RUN composer install --optimize-autoloader
 RUN npm install
 
 # Set permissions
 RUN chmod -R 755 storage bootstrap/cache
+RUN chown -R www-data:www-data /var/www/html
+
+# Update .env to force HTTPS
+RUN echo "\n# Force HTTPS for assets" >> .env
+RUN echo "FORCE_HTTPS=true" >> .env
+RUN echo "ASSET_URL=https://\${APP_URL}" >> .env
+
+# Generate app key
+RUN php artisan key:generate --force
+
+# Optimize Laravel
+RUN php artisan optimize
+RUN php artisan config:cache
+RUN php artisan route:cache
+RUN php artisan view:cache
+
+# Build frontend assets
+RUN npm run build
+
+# Configure Nginx
+RUN rm /etc/nginx/sites-enabled/default
+RUN rm /etc/nginx/sites-available/default
+COPY docker/nginx/nginx.conf /etc/nginx/sites-available/
+RUN ln -s /etc/nginx/sites-available/nginx.conf /etc/nginx/sites-enabled/
+
+# Create necessary directories
+RUN mkdir -p /etc/nginx/ssl
+RUN mkdir -p /var/run/nginx
+RUN mkdir -p /var/log/supervisor
+
+# Create script to handle .env file
+COPY .env .env
+
+# Copy supervisor configuration
+COPY docker/supervisor/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+# Create startup script
+RUN echo '#!/bin/bash\n\
+# Wait for database\n\
+echo "Waiting for database to be ready..."\n\
+sleep 5\n\
+\n\
+# Update trusted proxies for Laravel\n\
+echo "TRUSTED_PROXIES=*" >> .env\n\
+\n\
+# Run migrations\n\
+php artisan migrate --force\n\
+\n\
+# Start supervisor\n\
+/usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf' > /var/www/html/start.sh
+RUN chmod +x /var/www/html/start.sh
 
 # Expose port
-EXPOSE 8000
+EXPOSE 80
 
-# Start server
-CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"] 
+# Start supervisor
+CMD ["/var/www/html/start.sh"] 
