@@ -75,7 +75,7 @@ This repository contains a Docker-based environment for Laravel development. It 
 -   Redis server
 -   CI/CD with GitHub Actions
 -   Conventional Commits linting
--   Laravel Cloud deployment support
+-   Vercel deployment support
 
 ## Requirements
 
@@ -173,30 +173,36 @@ This project includes GitHub Actions workflows for continuous integration and de
 
 ## Deployment Options
 
+### Vercel
+
+This project is configured for easy deployment to Vercel, a platform optimized for frontend frameworks and serverless functions.
+
+To deploy to Vercel:
+
+1. Run the deployment helper script:
+
+    ```bash
+    ./deploy-to-vercel.sh
+    ```
+
+2. Follow the prompts to complete the deployment process
+
+Benefits of Vercel:
+
+-   Zero configuration deployment
+-   Global CDN with automatic HTTPS
+-   Preview deployments for pull requests
+-   Serverless architecture that scales automatically
+
+For detailed instructions, see [VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md)
+
 ### Laravel Cloud
 
-This project is configured for easy deployment to Laravel Cloud, the official hosting platform for Laravel applications.
-
-To deploy to Laravel Cloud:
-
-1. Sign up for a [Laravel Cloud](https://cloud.laravel.com/) account
-2. Connect your Git repository
-3. Follow the deployment steps in the [Laravel Cloud Deployment Guide](LARAVEL_CLOUD_DEPLOYMENT.md)
-
-Benefits of Laravel Cloud:
-
--   Deploy in under 60 seconds
--   Automatic scaling based on traffic
--   Managed databases, caches, and object storage
--   Global CDN and DDoS protection
--   Zero configuration needed
+For Laravel Cloud deployment, please refer to [LARAVEL_CLOUD_DEPLOYMENT.md](LARAVEL_CLOUD_DEPLOYMENT.md)
 
 ### Custom Deployment
 
-For custom deployment options, you can use the included GitHub Actions CD workflow:
-
-1. Add the required GitHub Secrets (see below)
-2. Push to the main branch to trigger deployment
+For custom deployment options, you can use the included GitHub Actions CD workflow. See the [Custom Deployment](#required-secrets-for-custom-cd) section below.
 
 #### Required Secrets for Custom CD
 
