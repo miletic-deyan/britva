@@ -27,7 +27,7 @@ echo "Preparing files for deployment..."
 if [ -f vercel.json ]; then
   echo "✅ vercel.json found."
 else
-  echo "❌ vercel.json not found. Please create it first."
+  echo "❌ vercel.json not found. Please make sure this file exists."
   exit 1
 fi
 
@@ -35,8 +35,50 @@ fi
 if [ -f api/index.php ]; then
   echo "✅ api/index.php found."
 else
-  echo "❌ api/index.php not found. Please create it first."
-  exit 1
+  echo "❌ api/index.php not found. Creating it now..."
+  mkdir -p api
+  echo '<?php // Forward Vercel requests to normal index.php require __DIR__ . "/../public/index.php";' > api/index.php
+  echo "✅ api/index.php created."
+fi
+
+# Check if .vercelignore exists
+if [ -f .vercelignore ]; then
+  echo "✅ .vercelignore found."
+else
+  echo "❌ .vercelignore not found. Creating it now..."
+  cat > .vercelignore << EOL
+/vendor
+/node_modules
+/.git
+/.github
+/.vscode
+/.idea
+/storage/*.key
+.env
+.env.backup
+.env.*.backup
+.phpunit.result.cache
+docker-compose.yml
+.DS_Store
+Dockerfile
+EOL
+  echo "✅ .vercelignore created."
+fi
+
+# Prepare Laravel for Vercel deployment
+echo "Preparing Laravel application for Vercel..."
+
+# Make sure APP_KEY is set
+if [ ! -f .env ]; then
+  echo "⚠️ No .env file found. Copying from .env.example..."
+  cp .env.example .env
+  echo "✅ .env created from .env.example"
+fi
+
+if grep -q "^APP_KEY=$" .env; then
+  echo "⚠️ APP_KEY is not set in .env. Generating key..."
+  php artisan key:generate
+  echo "✅ APP_KEY generated."
 fi
 
 # Check if all changes are committed
@@ -91,8 +133,12 @@ case $deploy_option in
 esac
 
 echo ""
-echo "Note: You can set environment variables in the Vercel dashboard."
-echo "Visit: https://vercel.com/dashboard"
+echo "Important Vercel Environment Variables to Set in Dashboard:"
+echo "- DB_CONNECTION: Use an external database provider"
+echo "- DB_HOST, DB_PORT, DB_DATABASE, DB_USERNAME, DB_PASSWORD: For database connection"
+echo "- AWS_* variables: If using S3 for file storage"
+echo ""
+echo "Visit: https://vercel.com/dashboard to manage your project"
 echo ""
 echo "For more information about Laravel on Vercel, visit:"
 echo "https://vercel.com/guides/deploying-laravel-with-vercel" 

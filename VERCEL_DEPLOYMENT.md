@@ -23,7 +23,7 @@ The quickest way to deploy is using our helper script:
 ./deploy-to-vercel.sh
 ```
 
-This script will guide you through the deployment process.
+This script will guide you through the deployment process and automatically create required files if they're missing.
 
 ## Manual Deployment Steps
 
@@ -43,6 +43,8 @@ This project has been configured for Vercel with:
 -   A `vercel.json` file for deployment configuration
 -   An `api/index.php` file as the entry point
 -   Optimized environment variables in `.env.example`
+
+**Important Note**: In `vercel.json`, we set `"framework": null` since Laravel is not a native Vercel framework. Attempting to use `"framework": "laravel"` will result in a deployment error.
 
 ### 3. Deployment Options
 
@@ -75,6 +77,12 @@ Set up your environment variables in the Vercel dashboard:
 2. Navigate to "Settings" > "Environment Variables"
 3. Add your variables (database credentials, API keys, etc.)
 
+**Essential Environment Variables**:
+
+-   `APP_KEY`: Your Laravel application key (generate with `php artisan key:generate --show`)
+-   `DB_*`: Database connection details
+-   `AWS_*`: S3 storage configuration (if using file uploads)
+
 ## Database Configuration
 
 Vercel doesn't provide database hosting, so you'll need to use an external database service:
@@ -97,7 +105,7 @@ Since Vercel deployments are ephemeral (stateless), you need to use external sto
 
 Recommended: Set up an S3-compatible storage provider like AWS S3, Cloudflare R2, or DigitalOcean Spaces.
 
-Configure your `.env` file with:
+Configure your Vercel environment variables with:
 
 ```
 FILESYSTEM_DISK=s3
@@ -123,17 +131,35 @@ Vercel functions are stateless, so file-based caching won't persist. Use:
 
 -   Redis cache driver (via [Upstash](https://upstash.com/))
 -   Database cache driver (for smaller applications)
--   Set `CACHE_DRIVER=array` for simple applications
+-   Set `CACHE_DRIVER=array` for simple applications (default in our configuration)
 
 ## Troubleshooting
 
 ### Common Issues:
 
-1. **Deployment Fails**: Check for any Laravel-specific configurations that assume a traditional server setup.
+1. **"Framework should be equal to one of the allowed values" Error**:
 
-2. **Missing Assets**: Ensure your assets are being built correctly with `npm run build`.
+    - Make sure your `vercel.json` has `"framework": null` instead of `"framework": "laravel"`.
+    - Laravel is not in Vercel's list of supported frameworks, so we use a custom configuration.
 
-3. **Database Connection Issues**: Verify your database credentials and ensure your database provider allows connections from Vercel's IP ranges.
+2. **Deployment Fails**:
+
+    - Check that your PHP version in `vercel-php@0.6.0` runtime is compatible with your Laravel version.
+    - Ensure your `buildCommand` in `vercel.json` completes successfully.
+
+3. **Missing Assets**:
+
+    - Ensure your assets are being built correctly with `npm run build`.
+    - Check that your routes in `vercel.json` correctly map to your asset directories.
+
+4. **Database Connection Issues**:
+
+    - Verify your database credentials in the Vercel environment variables.
+    - Ensure your database provider allows connections from Vercel's IP ranges.
+
+5. **500 Errors After Deployment**:
+    - Check Vercel logs in the dashboard.
+    - Temporarily set `APP_DEBUG=true` in environment variables to see detailed error messages.
 
 ## Resources
 
