@@ -32,6 +32,6 @@
         "SSR_TEMP_PATH": "/tmp/ssr",
         "NODE_PATH": "node_modules"
     },
-    "buildCommand": "composer install --no-interaction --prefer-dist --optimize-autoloader && php artisan config:clear && php artisan route:clear && npm install && npm run build && php artisan storage:link",
+    "buildCommand": "./vercel-build.sh",
     "outputDirectory": "public"
 }

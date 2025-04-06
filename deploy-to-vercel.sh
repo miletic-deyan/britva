@@ -41,6 +41,60 @@ else
   echo "✅ api/index.php created."
 fi
 
+# Check if vercel-build.sh exists
+if [ -f vercel-build.sh ]; then
+  echo "✅ vercel-build.sh found."
+else
+  echo "❌ vercel-build.sh not found. Creating it now..."
+  cat > vercel-build.sh << 'EOL'
+#!/bin/bash
+
+# Exit when any command fails
+set -e
+
+echo "📦 Installing dependencies..."
+
+# Install Composer
+echo "🎼 Installing Composer..."
+curl -sS https://getcomposer.org/installer | php
+echo "✅ Composer installed successfully!"
+
+# Install PHP dependencies
+echo "🐘 Installing PHP dependencies..."
+php composer.phar install --no-interaction --prefer-dist --optimize-autoloader
+echo "✅ PHP dependencies installed successfully!"
+
+# Clear Laravel caches
+echo "🧹 Clearing Laravel caches..."
+php artisan config:clear
+php artisan route:clear
+echo "✅ Laravel caches cleared successfully!"
+
+# Install NPM dependencies if package.json exists
+if [ -f "package.json" ]; then
+    echo "📦 Installing NPM dependencies..."
+    npm install
+    echo "✅ NPM dependencies installed successfully!"
+
+    # Build frontend assets if build script exists
+    if grep -q "\"build\"" package.json; then
+        echo "🏗️ Building frontend assets..."
+        npm run build
+        echo "✅ Frontend assets built successfully!"
+    fi
+fi
+
+# Create storage link
+echo "🔗 Creating storage link..."
+php artisan storage:link
+echo "✅ Storage link created successfully!"
+
+echo "🚀 Build completed successfully!"
+EOL
+  chmod +x vercel-build.sh
+  echo "✅ vercel-build.sh created and made executable."
+fi
+
 # Check if .vercelignore exists
 if [ -f .vercelignore ]; then
   echo "✅ .vercelignore found."
@@ -63,6 +117,15 @@ docker-compose.yml
 Dockerfile
 EOL
   echo "✅ .vercelignore created."
+fi
+
+# Check if vercel.json has the correct build command
+if grep -q "\"buildCommand\": \"./vercel-build.sh\"" vercel.json; then
+  echo "✅ vercel.json has the correct build command."
+else
+  echo "⚠️ vercel.json may not have the correct build command."
+  echo "Please make sure your vercel.json has this line:"
+  echo '"buildCommand": "./vercel-build.sh",'
 fi
 
 # Prepare Laravel for Vercel deployment
@@ -134,6 +197,7 @@ esac
 
 echo ""
 echo "Important Vercel Environment Variables to Set in Dashboard:"
+echo "- APP_KEY: Your Laravel application key"
 echo "- DB_CONNECTION: Use an external database provider"
 echo "- DB_HOST, DB_PORT, DB_DATABASE, DB_USERNAME, DB_PASSWORD: For database connection"
 echo "- AWS_* variables: If using S3 for file storage"
