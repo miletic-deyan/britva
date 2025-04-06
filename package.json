@@ -7,7 +7,8 @@
         "prepare": "husky install",
         "commit": "git-cz",
         "lint": "eslint --ext .js .",
-        "commitlint": "commitlint --edit"
+        "commitlint": "commitlint --edit",
+        "vercel-build": "bash ./vercel-build.sh"
     },
     "devDependencies": {
         "@tailwindcss/vite": "^4.0.0",
