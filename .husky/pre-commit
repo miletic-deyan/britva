@@ -1,0 +1,17 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Run Laravel linting
+if [ -f vendor/bin/pint ]; then
+  echo "Running Laravel Pint..."
+  vendor/bin/pint
+fi
+
+# Run JS/TS linting if applicable
+if [ -f package.json ]; then
+  echo "Running JS/TS linting..."
+  npm run lint
+fi
+
+# Add changes to the staging area
+git add . 
